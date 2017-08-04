@@ -1,11 +1,15 @@
 import urllib2
+import urllib
 import sys
 import re
 import os
+from BeautifulSoup import BeautifulSoup
+
 
 site = sys.argv[1]
 find_chapter_name = "li  class=\"active\""
 find_manga_name = "<img class=\"img-responsive\""
+
 website = "website.html"
 hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -56,10 +60,34 @@ def create_directory(chapter_name, manga_name):
     if not os.path.exists(manga_name + '/' + chapter_name):
         os.makedirs(manga_name + '/' + chapter_name)
 
+def get_png_list():
+    png = []
+    file = open(website, "r")
+    soup = BeautifulSoup(file)
+    for index, link in enumerate(soup.findAll("img")):
+        if link.get("data-src") != None:
+            png.append(link.get("data-src"))
+            png[index] = png[index].replace(" ", "")
+    return png
+
+def save_png(chapter_name, manga_name, png):
+    count = 1
+    for i in png:
+        print i
+        req = urllib2.Request(i, headers=hdr)
+        img = urllib2.urlopen(req)
+        name = i.split("/")
+        localFile = open(manga_name + "/" + chapter_name + "/" + str(name[-1]), 'wb')
+        localFile.write(img.read())
+        localFile.close()
+        count += 1
+
 def main():
     save_html_file()
     info = get_info()
     create_directory(info[0], info[1])
+    png = get_png_list()
+    save_png(info[0], info[1], png)
     os.remove(website)
 
 if __name__ == '__main__':
